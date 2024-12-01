@@ -28,9 +28,8 @@ class Database:
         try:
             self.cursor.execute(query, params)
         except sqlite3.Error as e:
-            raise RuntimeError(f"An error occurred during the execution of the query:\n"
-                               f"Query: {query}\n"
-                               f"Exception: {e}")
+            raise e
+
 
 class DatabaseExecutor(Database):
 
@@ -105,8 +104,7 @@ class DatabaseExecutor(Database):
             query += f' WHERE {where}'
 
         self.execute(query)
-        value = self.cursor.fetchone()
-        return value or None
+        return self.cursor.fetchone()
 
     def fetchmany(self, table_name: str, fields: str = None, where: str = None, group_by: str = None):
         """
@@ -158,8 +156,7 @@ class DatabaseExecutor(Database):
             query += f' GROUP BY {group_by}'
 
         self.execute(query)
-        values = self.cursor.fetchmany(size=10000)
-        return values or None
+        return self.cursor.fetchmany(size=10000)
 
     def update(self, table_name: str, values: str, where: str = None):
         """
@@ -235,10 +232,15 @@ class DatabaseExecutor(Database):
             - Be cautious when constructing the `values` string to avoid SQL injection.
               It is recommended to use parameterized queries to safely insert data, especially when using user input.
         """
-        query = f'INSERT INTO {table_name}'
+        query = f'INSERT INTO {table_name} '
         if fields:
-            query += f' ({fields}) '
-        query += f' VALUES ({values}) '
+            query += f'({fields}) '
+        query += f'VALUES {values}'
 
-        self.execute(query)
+        try:
+            self.execute(query)
+        except sqlite3.IntegrityError:
+            return f'{values} already exists\n'
+
         self.connection.commit()
+        return None
