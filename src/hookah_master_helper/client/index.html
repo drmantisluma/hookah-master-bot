@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 20px;
+        background-color: #97CAEF; /* Фон страницы */
+    }
+
+    h2 {
+        margin-bottom: 10px;
+        color: #333;
+    }
+
+    .block {
+        background-color: #FFFFFF; /* Фон формы */
+        border: 2px solid #E8A87C; /* Рамка формы */
+        border-radius: 5px;
+        padding: 20px;
+        margin-bottom: 30px;
+        width: 350px; /* Форма чуть шире */
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+        position: relative;
+    }
+
+    label {
+        display: block;
+        font-weight: bold;
+        margin-bottom: 5px;
+        color: #333;
+    }
+
+    select, input[type="text"] {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 8px;
+        border: 1px solid #E8A87C;
+        border-radius: 3px;
+        background-color: #FFFFFF;
+        color: #333;
+    }
+
+    .brand-container {
+        display: flex;
+        align-items: center;
+    }
+
+    .brand-container select,
+    .brand-container input[type="text"] {
+        flex: 1;
+    }
+
+    .brand-container button {
+        margin-left: 5px;
+        padding: 8px 10px;
+        cursor: pointer;
+        background-color: #E8A87C;
+        border: none;
+        border-radius: 3px;
+        color: #333;
+        font-weight: bold;
+    }
+
+    button[type="submit"] {
+        padding: 8px 15px;
+        cursor: pointer;
+        background-color: #E8A87C;
+        border: none;
+        border-radius: 3px;
+        color: #333;
+        font-weight: bold;
+    }
+
+    button:hover {
+        background-color: #d8966f; /* Небольшое потемнение при ховере */
+    }
+</style>
+<title>Tobacco Management</title>
+</head>
+<body>
+
+<div class="block">
+    <h2>Add new tobacco</h2>
+    <form id="uploadForm">
+        <div class="form-group">
+            <label>Brand:</label>
+            <div class="brand-container" id="brandWrapper">
+                <select name="brand" id="brandSelect"></select>
+                <input type="text" name="brandInput" id="brandInput" style="display:none;" placeholder="Enter the brand"/>
+                <button type="button" id="addBrandBtn">+</button>
+                <button type="button" id="backToSelectBtn" style="display:none;">←</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Taste:</label>
+            <select name="taste">
+                <option value="sweet">Sweet</option>
+                <option value="sour">Sour</option>
+                <option value="drink">Drink</option>
+                <option value="herbs">Herbs</option>
+                <option value="dessert">Dessert</option>
+                <option value="no">No specific taste</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Flavour:</label>
+            <input type="text" name="flavour" placeholder="Enter the flavour"/>
+        </div>
+        <button type="submit">Submit</button>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadBrands();
+});
+
+function loadBrands() {
+    fetch('/api/tobacco/brands')
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(brands) {
+        var brandSelect = document.getElementById('brandSelect');
+        brandSelect.innerHTML = '';
+        brands.forEach(function(brand) {
+            var option = document.createElement('option');
+            option.value = brand;
+            option.textContent = brand;
+            brandSelect.appendChild(option);
+        });
+    })
+    .catch(function(error) {
+        console.error('Ошибка при получении брендов:', error);
+    });
+}
+
+var addBrandBtn = document.getElementById('addBrandBtn');
+var backToSelectBtn = document.getElementById('backToSelectBtn');
+var brandSelect = document.getElementById('brandSelect');
+var brandInput = document.getElementById('brandInput');
+
+addBrandBtn.addEventListener('click', function() {
+    brandSelect.style.display = 'none';
+    addBrandBtn.style.display = 'none';
+    brandInput.style.display = 'block';
+    backToSelectBtn.style.display = 'block';
+    brandInput.focus();
+});
+
+backToSelectBtn.addEventListener('click', function() {
+    brandInput.style.display = 'none';
+    backToSelectBtn.style.display = 'none';
+    brandSelect.style.display = 'block';
+    addBrandBtn.style.display = 'block';
+    brandInput.value = '';
+    loadBrands();
+});
+
+document.getElementById('uploadForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var useInputField = (brandInput.style.display !== 'none');
+    var brand = useInputField && brandInput.value.trim() !== '' ? brandInput.value.trim() : brandSelect.value;
+    var flavour = this.elements['flavour'].value;
+    var taste = this.elements['taste'].value;
+
+    var data = {
+        brand: brand,
+        taste: taste,
+        flavour: flavour
+    };
+
+    fetch('/api/tobacco/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(function(response) {
+        return response.text();
+    })
+    .then(function(text) {
+        alert(text);
+    })
+    .catch(function(error) {
+        console.error('Error while requesting:', error);
+    });
+});
+</script>
+</body>
+</html>
